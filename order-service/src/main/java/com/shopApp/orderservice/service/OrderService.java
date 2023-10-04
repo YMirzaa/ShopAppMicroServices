@@ -1,10 +1,13 @@
 package com.shopApp.orderservice.service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
+import com.shopApp.orderservice.dto.InventoryResponse;
 import com.shopApp.orderservice.dto.OrderLineItemsDto;
 import com.shopApp.orderservice.dto.OrderRequest;
 import com.shopApp.orderservice.model.Order;
@@ -19,6 +22,8 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
 
+    private final WebClient webClient;
+
     public void placeOrder(OrderRequest orderRequest) {
         Order order = new Order();
         order.setOrderNumber(UUID.randomUUID().toString());
@@ -28,7 +33,23 @@ public class OrderService {
 
         order.setOrderLineItemsList(orderLineItems);
 
-        orderRepository.save(order);
+        List<String> skuCodes = order.getOrderLineItemsList().stream().map(OrderLineItems::getSkuCode).toList();
+
+        // Call Inventory Service
+        InventoryResponse[] inventoryResponses = webClient.get()
+                .uri("http://localhost:8082/api/inventory",
+                        uriBuilder -> uriBuilder.queryParam("skuCode", skuCodes).build())
+                .retrieve()
+                .bodyToMono(InventoryResponse[].class)
+                .block();
+
+        boolean resultIfInInventory = Arrays.stream(inventoryResponses).allMatch(InventoryResponse::getIsInStock);
+
+        if (resultIfInInventory) {
+            orderRepository.save(order);
+        } else {
+            throw new IllegalArgumentException("Product is not available");
+        }
     }
 
     private OrderLineItems mapToDto(OrderLineItemsDto orderLineItemsDto) {
