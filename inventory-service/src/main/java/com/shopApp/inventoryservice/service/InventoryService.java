@@ -16,13 +16,13 @@ public class InventoryService {
     private final InventoryRepository inventoryRepository;
 
     // @Transactional(Transactional.TxType.)
-    public Boolean isInStock(String skuCode) {
-        return inventoryRepository.findBySkuCode(skuCode).isPresent();
-    }
+    // public Boolean isInStock(String skuCode) {
+    // return inventoryRepository.findBySkuCode(skuCode).isPresent();
+    // }
 
     // @Transactional(read)
     public List<InventoryResponse> isInStockMultiple(List<String> skuCode) {
-        return inventoryRepository.findBySkuCodeMultiple(skuCode)
+        return inventoryRepository.findBySkuCodeIn(skuCode)
                 .stream()
                 .map(inventory -> InventoryResponse
                         .builder()

@@ -21,11 +21,11 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
-    @GetMapping("/{skuCode}")
-    @ResponseStatus(org.springframework.http.HttpStatus.OK)
-    public Boolean isInStock(@PathVariable("skuCode") String skuCode) {
-        return inventoryService.isInStock(skuCode);
-    }
+    // @GetMapping("/{skuCode}")
+    // @ResponseStatus(org.springframework.http.HttpStatus.OK)
+    // public Boolean isInStock(@PathVariable("skuCode") String skuCode) {
+    // return inventoryService.isInStock(skuCode);
+    // }
 
     @GetMapping
     @ResponseStatus(org.springframework.http.HttpStatus.OK)
