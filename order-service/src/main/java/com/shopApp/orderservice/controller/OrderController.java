@@ -7,7 +7,12 @@ import org.springframework.web.bind.annotation.RestController;
 import com.shopApp.orderservice.dto.OrderRequest;
 import com.shopApp.orderservice.service.OrderService;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import lombok.RequiredArgsConstructor;
+
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,10 +27,12 @@ public class OrderController {
 
     @PostMapping
     @ResponseStatus(org.springframework.http.HttpStatus.CREATED)
-    public String placeOrder(@RequestBody OrderRequest orderRequest) {
+    @CircuitBreaker(name = "inventory", fallbackMethod = "placeOrderFallback")
+    @TimeLimiter(name = "inventory")
+    @Retry(name = "inventory")
+    public CompletableFuture<String> placeOrder(@RequestBody OrderRequest orderRequest) {
 
-        orderService.placeOrder(orderRequest);
-        return "Order Placed Successfully";
+        return CompletableFuture.supplyAsync(() -> orderService.placeOrder(orderRequest));
     }
 
     @GetMapping
@@ -34,6 +41,10 @@ public class OrderController {
 
         // orderService.placeOrder(orderRequest);
         return "GET Request";
+    }
+
+    public CompletableFuture<String> placeOrderFallback(OrderRequest orderRequest, Exception e) {
+        return CompletableFuture.supplyAsync(() -> "Our servers having a problem, please try again later.");
     }
 
 }
