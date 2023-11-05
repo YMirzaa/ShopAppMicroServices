@@ -4,12 +4,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.shopApp.orderservice.dto.InventoryResponse;
 import com.shopApp.orderservice.dto.OrderLineItemsDto;
 import com.shopApp.orderservice.dto.OrderRequest;
+import com.shopApp.orderservice.event.OrderPlacedEvent;
 import com.shopApp.orderservice.model.Order;
 import com.shopApp.orderservice.model.OrderLineItems;
 import com.shopApp.orderservice.repository.OrderRepository;
@@ -21,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-
+    private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
     private final WebClient.Builder webClientBuilder;
 
     public String placeOrder(OrderRequest orderRequest) {
@@ -47,6 +49,7 @@ public class OrderService {
 
         if (resultIfInInventory) {
             orderRepository.save(order);
+            kafkaTemplate.send("notificationTopic", new OrderPlacedEvent(order.getOrderNumber()));
             return "Order Placed Successfully";
         } else {
             throw new IllegalArgumentException("Product is not available");
